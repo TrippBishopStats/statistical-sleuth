@@ -1,0 +1,100 @@
+---
+title: "Chapter 2" author: "Tripp Bishop" format: html
+---
+```{r setup}
+#| echo: false
+rm(list = ls())
+library(tidyverse)
+library(tidymodels)
+```
+
+We first create a dataframe to store our data.
+```{r sparrow data}
+survived <- rep(c(TRUE, FALSE), times=c(35,24))
+humerus_length_in <- c(
+  #survivors
+  0.687,0.703,0.709,0.715,0.721,0.723,0.723,0.726,0.728,0.728,0.728,
+  0.729,0.730,0.730,0.733,0.733,0.735,0.736,0.739,0.741,0.741,0.741,
+  0.741,0.743,0.749,0.751,0.752,0.752,0.755,0.756,0.766,0.767,0.769,
+  0.770,0.780,
+  # victims
+  0.659,0.689,0.702,0.703,0.709,0.713,0.720,0.720,0.726,0.726,0.729,
+  0.731,0.736,0.737,0.738,0.738,0.739,0.743,0.744,0.745,0.752,0.752,
+  0.754,0.765
+)
+
+df_sparrows <- tibble(humerus_length_in, survived) |>
+  mutate(
+    survived = factor(survived, labels = c("Perished", "Survived"))
+  )
+```
+Since we have already collected and stored the data, the next step is to
+calculate the test statistic. Here, we're interested in the difference in means
+of the length of the humerus bone in the two groups of sparrows.
+```{r create test statistic}
+obs_diff <- df_sparrows |>
+  specify(humerus_length_in ~ survived) |>
+  calculate(stat = "diff in means", order = c("Survived", "Perished")) |>
+  pull()
+```
+Now, we create a `null world` where we create a sampling distribution where the
+survival of the individual birds is independent of their humerus length.
+```{r creat null distribution}
+sparrows_null <- df_sparrows |> 
+  specify(humerus_length_in ~ survived) |> 
+  hypothesise(null = "independence") |> 
+  generate(reps = 1500, type = "permute") |> 
+  calculate(stat = "diff in means", order = c("Survived", "Perished"))
+
+p_value <- round(
+  get_p_value(sparrows_null, obs_stat = obs_diff, direction = "both"),
+  4
+)
+visualise(sparrows_null) +
+  shade_p_value(obs_diff, direction = "both") +
+  annotate("text", label = paste("p-value = ", p_value, sep=""), x = 0.014, y=150)
+```
+
+```{r t-test manual}
+
+sd_died <- df_sparrows |> 
+  filter(survived == "Perished") |> 
+  summarise(
+    std_dev = sd(humerus_length_in)
+  ) |> 
+  pull()
+
+sd_lived <- df_sparrows |> 
+  filter(survived == "Survived") |> 
+  summarise(
+    std_dev = sd(humerus_length_in)
+  ) |> 
+  pull()
+
+pooled_sd <- sqrt((sd_died^2*23 + sd_lived^2*34)/57)
+SE <- pooled_sd*sqrt(1/24 + 1/35)
+
+t_stat <- obs_diff/(SE)
+
+df <- 24 + 35 -2
+
+p_value <- pt(t_stat, df, lower.tail = FALSE)
+two_sided <- p_value*2
+
+qt(0.025, 57)
+qt(0.975, 57)
+
+
+```
+
+
+## Conceptual Exercises
+
+
+## Computational Exercises
+
+
+## Data Exercises
+
+
+

@@ -1,0 +1,163 @@
+---
+title: "Chapter 1 - Computational Exercises"
+author: "Tripp Bishop"
+format: html
+---
+
+```{r}
+#| message: false
+library(tidyverse)
+library(latex2exp)
+library(tidymodels)
+```
+
+
+### Problem 1
+
+
+```{r}
+df_planets <- tibble(object=c("Mercury","Venus","Earth","Mars","Asteroid","Jupiter","Saturn","Uranus","Neptune","Pluto"),
+                     order=1:10, 
+                     distance=c(3.87, 7.23,10.00,15.24,29.00,52.03,95.46,192.00,300.90,395.00)/10,
+                     log_distance = log(distance))
+
+df_planets |> 
+  ggplot(aes(x=order, y=distance)) +
+  geom_point()
+
+df_planets |> 
+  ggplot(aes(x=order, y=log_distance)) +
+  geom_point()
+```
+
+```{r}
+df_planets |> 
+  summarise(
+    mean_dist = mean(distance),
+    sd_dist = sd(distance),
+    mean_log_dist = mean(log_distance),
+    sd_log_dist = sd(log_distance)
+  )
+```
+
+
+
+### Problem 2
+
+
+
+
+Permuting "by hand".
+```{r}
+scores <- c(68,77,82,85,53,64,71)
+n <- 7
+r <- 4
+v <- 1:7
+
+# generate all of the combinations of 4 scores for the 7 we have.
+combos <- gtools::combinations(n, r, v = 1:n, repeats.allowed = FALSE)
+
+df <- NULL
+
+for(i in 1:nrow(combos)) {
+  # get the 4 score combination from the set of all combinations.
+  rep_scores <- scores[combos[i,]]
+  # now get the other 3 scores.
+  rep_scores <- c(rep_scores, scores[!(scores %in% scores[combos[i,]])])
+  # the first four scores will be the new group A for this replicate and the
+  # last three scores will be group B.
+  rep_groups <- c("A","A","A","A","B","B","B")
+  replicate_set <- tibble(
+    replicate = rep(i, times=7),
+    score=rep_scores, 
+    group=rep_groups
+  )
+  
+  # now add the current replicate to the total collection.
+  if (is.null(df)) {
+    df <- replicate_set
+  } else {
+    df <- bind_rows(df, replicate_set)
+  }
+}
+
+# now that we have all replicates, we can compute summary statistics for each
+# one.
+
+df_summarised <- df |> 
+  group_by(replicate, group) |> 
+  summarise(
+    avg_score = mean(score)
+  ) |> 
+  ungroup() |> 
+  pivot_wider(names_from = group, values_from = avg_score) |> 
+  mutate(
+    mean_diff = A - B
+  )
+
+obs_diff <- df_summarised |> 
+  filter(replicate == 1) |> 
+  select(mean_diff) |> 
+  pull()
+
+df_summarised |> 
+  ggplot(aes(x=mean_diff)) +
+  geom_histogram(colour="white", bins = 12) +
+  geom_vline(xintercept = obs_diff, colour="red", alpha=0.5, linewidth=1.5)
+
+
+df_summarised |> 
+  summarise(
+    stderr = sd(mean_diff),
+    pop_mean_est = mean(mean_diff),
+    p_val = 2*pnorm(obs_diff, mean=pop_mean_est, sd=stderr, lower.tail=FALSE)
+  ) |> pull(p_val)
+
+```
+
+
+
+Using the `infer` package.
+```{r}
+df_scores <- tibble(score=c(68,77,82,85,53,64,71), group=c("A","A","A","A","B","B","B"))
+
+df_scores |> 
+  group_by(group) |> 
+  summarise(
+    avg_score = mean(score)
+  )
+
+scores_null <- df_scores |> 
+  specify(score ~ group) |> 
+  hypothesize(null = "independence") |> 
+  generate(reps = 1000, type = "permute") |>  
+  calculate("diff in means", 
+            order = c("A", "B"))
+
+
+diff_means <- df_scores |>  
+  specify(score ~ group) |>  
+  calculate("diff in means", 
+            order = c("A", "B"))
+
+scores_null |> 
+  visualize() + 
+  geom_vline(xintercept = diff_means$stat, color = "#FF4136", linewidth = 1) +
+  labs(x = "Difference in mean test score\n(Group A − Group B)",
+       y = "Count",
+       subtitle = "Red line shows observed difference in mean scores") +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+
+```
+
+```{r}
+p_value <- scores_null %>% 
+  get_pvalue(obs_stat = diff_means, direction = "two-sided") |> 
+  pull()
+```
+
+`r round(p_value, 4)`
+
+
+

@@ -47,3 +47,6 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+chapter-1-computational-exercises_files/
+chapter-1-computational-exercises.html
