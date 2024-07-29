@@ -1,5 +1,7 @@
 ---
-title: "Chapter 2" author: "Tripp Bishop" format: html
+title: "Chapter 2" 
+author: "Tripp Bishop" 
+format: html
 ---
 ```{r setup}
 #| echo: false
@@ -7,7 +9,6 @@ rm(list = ls())
 library(tidyverse)
 library(tidymodels)
 ```
-
 We first create a dataframe to store our data.
 ```{r sparrow data}
 survived <- rep(c(TRUE, FALSE), times=c(35,24))
@@ -22,7 +23,6 @@ humerus_length_in <- c(
   0.731,0.736,0.737,0.738,0.738,0.739,0.743,0.744,0.745,0.752,0.752,
   0.754,0.765
 )
-
 df_sparrows <- tibble(humerus_length_in, survived) |>
   mutate(
     survived = factor(survived, labels = c("Perished", "Survived"))
@@ -40,12 +40,11 @@ obs_diff <- df_sparrows |>
 Now, we create a `null world` where we create a sampling distribution where the
 survival of the individual birds is independent of their humerus length.
 ```{r creat null distribution}
-sparrows_null <- df_sparrows |> 
-  specify(humerus_length_in ~ survived) |> 
-  hypothesise(null = "independence") |> 
-  generate(reps = 1500, type = "permute") |> 
+sparrows_null <- df_sparrows |>
+  specify(humerus_length_in ~ survived) |>
+  hypothesise(null = "independence") |>
+  generate(reps = 1500, type = "permute") |>
   calculate(stat = "diff in means", order = c("Survived", "Perished"))
-
 p_value <- round(
   get_p_value(sparrows_null, obs_stat = obs_diff, direction = "both"),
   4
@@ -54,47 +53,81 @@ visualise(sparrows_null) +
   shade_p_value(obs_diff, direction = "both") +
   annotate("text", label = paste("p-value = ", p_value, sep=""), x = 0.014, y=150)
 ```
-
 ```{r t-test manual}
-
-sd_died <- df_sparrows |> 
-  filter(survived == "Perished") |> 
+sd_died <- df_sparrows |>
+  filter(survived == "Perished") |>
   summarise(
     std_dev = sd(humerus_length_in)
-  ) |> 
+  ) |>
   pull()
-
-sd_lived <- df_sparrows |> 
-  filter(survived == "Survived") |> 
+sd_lived <- df_sparrows |>
+  filter(survived == "Survived") |>
   summarise(
     std_dev = sd(humerus_length_in)
-  ) |> 
+  ) |>
   pull()
-
 pooled_sd <- sqrt((sd_died^2*23 + sd_lived^2*34)/57)
 SE <- pooled_sd*sqrt(1/24 + 1/35)
-
 t_stat <- obs_diff/(SE)
-
 df <- 24 + 35 -2
-
 p_value <- pt(t_stat, df, lower.tail = FALSE)
 two_sided <- p_value*2
-
 qt(0.025, 57)
 qt(0.975, 57)
-
-
 ```
-
-
 ## Conceptual Exercises
+
+### Problem 1
+> In drawing conclusions about the Bumpus data , why might it be important to 
+know whether all the birds were measured before the ones htat perished actually 
+died?
+
+If the birds' bodies change after death, this could distort the group
+differences. It might be possible that the death of the birds is what is causing
+a difference in mean humerus length.
+
+There is also the possibility of measurement bias since the researcher measuring
+the birds will know which ones are dead and alive and if they have a particular 
+expectation it might result in them subtly changing the way that they make their
+measurements of the individual specimens.
+
+### Problem 2
+> For comparing two population means when the population distributions have the 
+same standard deviation, the standard deviation is sometimes referred to as a
+nuisance parameter. Explain why it might be considered a nuisance.
+
+The standard deviation is not generally of that much interest, but it must be
+estimated from the data, because it is not usually known, in order to 
+investigate the mean.
+
+### Problem 3
+>True or false? If the sample size is large, then the shape of the histogram of
+the sample will be approximately normal, even if the population distribution is
+not normal.
+
+This is false. The histogram of the sample will approximate the population 
+distribution. The larger the sample, the better the approximation of this
+distribution.
+
+### Problem 4
+> True or false? If a sample size is large, then the shapre of the sampling
+distribution will be approximately normal, even if the population distribution
+is not normal.
+
+This is true. This is the result of the central limit theorem. In particular,
+the standard error of the sampling distribution will get smaller and tails of
+the distribution will shrink.
+
+### Problem 5
+> Explain the relative merits of 90% and 99% levels of confidence.
+
+
+
+### Problem 6
+> What is wrong with the hypothesis that $\bar{Y}_2 - \overline{Y}_1 = 0$?
 
 
 ## Computational Exercises
 
 
 ## Data Exercises
-
-
-
