@@ -121,10 +121,113 @@ the distribution will shrink.
 ### Problem 5
 > Explain the relative merits of 90% and 99% levels of confidence.
 
+The level of confidence is directly related to the width of the interval. A 
+lower level of confidence results in a narrower interval which might provide
+better constraint on the true value of the parameter, but you risk being wrong
+in your estimate of the parameter and therefore the outcome of your hypothesis
+test. You risk rejecting the null hypothesis when you should not. This is known
+as a Type II error.
 
+On the other hand, a high confidence level means that you are likely to capture
+the true value of the parameter, but you are more likely to fail to reject the 
+null hypothesis even though it is false. This is known as a Type I error.
+
+The choice of confidence level is often governed by the penalty paid for making
+a  Type I or II error. If a false possible would be a bad outcome, then a higher
+confidence level is warranted. Perhaps you want to be very certain that you have
+detected something real, in which case you would want to set $\alpha$ quite
+small. On the other hand, if you want to avoid false negatives, a narrower
+confidence interval will likely result in rejecting the null hypothesis.
 
 ### Problem 6
-> What is wrong with the hypothesis that $\bar{Y}_2 - \overline{Y}_1 = 0$?
+> What is wrong with the hypothesis that $\bar{Y}_2 - \bar{Y}_1 = 0$?
+
+The hypothesis is about the population means $\mu_1, \mu_2$ not the sample 
+means.
+
+Kinda pedantic... but whatever.
+
+### Problem 7
+> In a study of the effects of marijuana use during pregnancy, measurements on 
+babies of mothers who used marijuana during pregnancy were compared to 
+measurements on babies of mothers who did not. A 95% confidence interval for the
+difference in mean head circumference (nonuse minus use) was 0.61 to 1.19cm. 
+What can be said from this statement about a *p*-value for the hypothesis that 
+the mean difference is zero?
+
+Since the interval does not contain zero, we know that the *p*-value is going to
+be small. Since the confidence interval is $100(1-\alpha) = 95%$, we know that 
+our threshold is $p=0.05$. We know that $p < 0.05$ given that the interval does 
+not contain the hypothesised parameter value. 
+
+### Problem 8
+> Suppose the following statement is made in a statistical summary: "A 
+comparison of breathing capacities of individuals in househols with low nitrogen
+dioxide levels and individuals in households with high nitrogen dioxide levels 
+indicated that there is not difference in the means 
+(two-sided, *p*-value=0.24)". What is wrong with this statement?
+
+The statement is too strong. When performing a hypothesis test, the null
+hypothesis is not accepted, we simply fail to reject it. Stated another way, the
+data collected are not consistent with the means being different, but that
+doesn't rule out future data being incompatible with unequal means.
+
+### Problem 9
+> What is the difference (a) between the mean of $Y$ and the mean of $\bar{Y}$?
+(b) the standard deviation of $Y$ and the standard deviation of $\bar{Y}$?(c) 
+the standard deviation of $\bar{Y}$ and the standard error of $\bar{Y}$?(d) a 
+t-ratio and a t-statistic?
+
+(a) The mean of $Y$ is the population mean and as the mean of $\bar{Y}$ is the 
+mean of the sampling distribution. In the limit as the sample size ($n$) goes to
+infinite, the two values are equal.
+(b) The standard deviation of the population ($Y$) is $\sigma$. The standard 
+deviation of the sampling distribution is $\sigma/\sqrt{n}$. Notice that as 
+$n \rightarrow \infty$ that the standard deviation of the sampling distribution
+goes to zero, indicating that the population mean and the mean of the sampling
+distribution converge.
+(c) The standard deviation of $\bar{Y}$ and the standard error of $\bar{Y}$ are
+the same thing. The standard error is called that because it tells us our best
+guess about $\bar{Y} - \mu$. In other words, it's our best guess about how
+far from the true mean our sample mean is.
+(d) The t-ratio is the ratio of the error of the sample mean from the population
+mean to the standard error of the sampling distribution. The t-ratio relates the
+possible values of the population mean to a t-distribution with the appropriate
+degrees of freedom based on the sample size. The t-statistic, on the other hand, 
+is the ratio of the difference of means of two samples 
+(of different populations) to a hypothesised difference in their population means
+(typically taken to be zero) to the pooled standard error of the two samples.
+
+*Addendum* - The t-ratio is generally not know because we don't actually know 
+the population parameter. The t-statistic is a trial value of the t-ratio where
+we use a hypothsised value of the parameter which we are testing with the NHST
+framework.
+
+### Problem 10
+> Consider blood pressure levels for populations of young women using birth
+control pills and young women not using birth control pills. A comparison of 
+these populations through an observational study might be consisten with the 
+theory that the pill elevates blood pressure levels. What tool is appropriate 
+for addressing whether there is a difference between these two population? What 
+tool is appropriate for addressing the likely size of the difference?
+
+*p*-values are one way to access how likely it is that we would observe a 
+difference equal to or more extreme than our data assuming that the null 
+hypothesis of no difference is true.
+
+A confidence interval constructed using the NHST framework will tell us what
+percentage of sample means will fall within the range given by the confidence
+interval. It is important to note that it doesn't say anything about whether our
+data falls within this range. It is very easy to misinterpret frequentist
+confidence intervals.
+
+### Problem 11
+> The data in Display 2.14 are survival times (in days) of guinea pigs that were
+randomly assigned either to a control group or ato a treatment group that 
+received a dose of tubercle bacilli. (a) Why might the additive treatment effect
+model be inappropriate for these data? (b) Why might the ideal normal model with
+equal spread be an inadequate approximation?
+
 
 
 ## Computational Exercises
