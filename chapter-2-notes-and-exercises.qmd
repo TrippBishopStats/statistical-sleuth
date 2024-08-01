@@ -5,6 +5,8 @@ format: html
 ---
 ```{r setup}
 #| echo: false
+#| message: false
+
 rm(list = ls())
 library(tidyverse)
 library(tidymodels)
@@ -228,9 +230,233 @@ received a dose of tubercle bacilli. (a) Why might the additive treatment effect
 model be inappropriate for these data? (b) Why might the ideal normal model with
 equal spread be an inadequate approximation?
 
+(a) The spread of data in the two groups doesn't suggest that the treatment 
+group has merely experienced a shift in outcomes consistent with 
+$Y^* = Y + \delta$. The control group has a larger variance (and also looks 
+bimodal), so does not look like this model applies to this data.
 
+(b) The ideal normal model doesn't apply here because the variance in the two 
+groups is clearly different. The control group even appears to be bimodal, and 
+so is not normally distributed.
 
 ## Computational Exercises
 
+### Problem 12 - Marijuana Use During Pregnancy
+> For the virth weights of babies in two groups, one born of mother who used 
+marijuana during pregnancy and the other borm of mothers who did not, the 
+difference in smaple averages (nonuser mothers minus user mothers) was 280 
+grams, and the standard eorror of the difference was 46.66 grams with 1095 
+degrees of freedom. From this information, provide the following: (a) a 95% 
+confidence interval for $\mu_2 - \mu_1$, (c) a 90% confidence interval for 
+$\mu_2 - \mu_1$,, and (c) the two-sided *p*-value for a test of the hypothesis 
+that $\mu_2 - \mu_1 = 0$.
+
+
+
+The test statistic for this hypothesis test is
+$$
+t = \frac{(\bar{Y}_2 - \bar{Y}_1) - 0}{\text{SE(difference)}} = \frac{280 - 0}{46.66} = `r round(280/46.66, 4)`
+$$
+
+```{r}
+t_12 <- 280/46.66
+ci_95 <- round(c(qt(0.025, df=1095), qt(0.975, df=1095)), 4)
+ci_90 <- round(c(qt(0.05, df=1095), qt(0.95, df=1095)), 4)
+p_12 <- 2*pt(t_12, df=1095, lower.tail = FALSE)
+```
+
+
+
+The 95% confidence interval is $[`r ci_95[1]`, `r ci_95[2]`]$.
+
+The 90% confidence interval is $[`r ci_90[1]`, `r ci_90[2]`]$.
+
+Because there are so many degrees of freedom, these t-distributions very closely
+approximate the normal distribution, so the fact that these confidence intervals
+closely resemble that of the standard normal is not surprising.
+
+The two-sided *p*-value for this test is $p \approx `r round(p_12,4)`$ which makes sense
+given the large ratio of the difference of means to the standard deviation of 
+the difference in means.
+
+### Problem 13
+> Reconsider the changes in blood pressures for mean placed on a fish oil diet and for men placed on a regular oil diet. Do the following steps to compare the treatments:
+
+
+(a) Compute the averates and the sample standard deviations for each group separately.
+```{r}
+fish_oil <- c(8,12,10,14,2,0,0)
+regular_oil <- c(-6,0,1,2,-3,-4,2)
+
+fish_bar <- mean(fish_oil)
+regular_bar <- mean(regular_oil)
+
+fish_s <- sd(fish_oil)
+regular_s <- sd(regular_oil)
+```
+
+The average reduction in diastolic blood pressure for:
+
+Fish oil group: $`r fish_bar`$
+Regular oil group: $`r regular_bar`$
+
+Standard deviations for the groups:
+
+Fish oil group: $`r fish_s`$
+Regular oil group: $`r regular_s`$
+
+(b) Compute the pooled estimate of standard deviation using the formula in 
+section 2.3.2.
+
+The pooled standard deviation is just the square root of weighted average of the
+variances.
+
+$$
+s_p = \sqrt{\frac{(n_1 - 1)s_1^2 + (n_2 - 1)s_2^2}{n_1 + n_2 - 2}}
+$$
+
+```{r}
+n <- 14
+n_1 <- n_2 <- n/2
+s_p <- sqrt(((n_1-1)*fish_s^2 + (n_2-1)*regular_s^2)/(n_1 + n_2 - 2))
+```
+
+The pooled standard deviation is $`r round(s_p, 4)`$.
+
+(c) Compute $SE(\bar{Y_2} - \bar{Y_1})$ using the formula in section 2.3.2.
+
+```{r}
+SE <- s_p*sqrt(1/n_1 + 1/n_2)
+```
+
+(d) What are the degrees of freedom associated with the pooled estimate of standard deviation? What is the 97.5th percentile of the *t*-distribution with this many degrees of freedom?
+
+There are 12 degrees of freedom associated with the pooled standard deviation. 
+We lose 2 degrees of freedom in computing the individual group standard 
+deviations.
+
+The 97.5th percentile for a t-distribution with 12 degrees of freedom is
+$`r round(qt(0.975, df=12), 4)`$.
+
+(e) Construct a 95% confidence interval for $\mu_2 - \mu_1$ using the formula in section 2.3.3.
+
+```{r}
+t_97.5 <- qt(0.975, df=12)
+
+lower <- round((fish_bar - regular_bar) - SE*t_97.5,4)
+upper <- round((fish_bar - regular_bar) + SE*t_97.5,4)
+```
+The 95% confidence interval is $[`r lower`, `r upper`]$.
+
+(f) Compute the *t*-statistic for testing equality as shown in Section 2.3.5.
+
+```{r}
+t <- (fish_bar - regular_bar)/SE
+```
+
+The t-statistic for this test is $`r round(t, 4)`$.
+
+(g) Find the one-sided *p*-value by comparing the *t*-statistic in (f) to the percentiles of the appropriate *t*-distribution.
+
+The one-sided *p*-value for this test is 
+$p=`r pt(t, df=12, lower.tail=FALSE)`$. Here, $p < 0.05$ and so we will
+reject the null hypothesis that the means are equal at the $\alpha = 0.05$ 
+level.
+
+### Problem 14
+> **Fish Oil and Blood Pressure**. Find the 95% confidence interval and one-sided *p*-valueasked for in Exercise 13(e) and (g) but use a statistical compute package to do so.
+
+We'll use the `t.test` function from base R. We assume homoskedasticity by specifying `var.equal=TRUE`. This function produces very similar results to the manual calculation in problem 13. The *t*-statistic is very similar as is the *p*-value.
+
+```{r}
+t.test(fish_oil, regular_oil, alternative = "greater", var.equal = TRUE)
+```
+The confidence interval is a bit weird here. Not sure why the upper bound is 
+$\infty$. The CI in problem 13 makes more sense, but I'm not sure which lower 
+bound is correct. I can't any issues with the manually computed one in problem 
+13. The other outputs agree nicely, so not sure what happened here.
+
+### Problem 15
+> **Auto exhaust and lead concentration in blood.** Researchers took independent
+random samples from two populations of policemen and measure the level of lead
+concentration in their blood. The sample of 126 police offices subjected to
+constant inhalation of automobile exhaust fumes in downtown Cairo had an average
+blood level concentration of $29.2\mu g/dl$ and an SD of $7.5 \mu g/dl$: a 
+control sample of 50 policemen from the Cairo suburb of Abbasia, with no history
+of exposure, had an average blood level concentration of $18.2 \mu g/dl$ and an 
+SD of $5.8\mu g/dl$. Is there convincing evidence of a difference in the 
+population means?
+
+Here are the pieces of information that we're given:
+
+- Average blood concentration for Abbasia police officers: $Y_{ap} = 18.2 \mu g/dl$
+- Average blood concentration for Cairo police officers: $Y_{cp} = 29.2 \mu g/dl$
+- Sample size of Abbasia police officers: $n_{ap} = 50$
+- Sample size of Cairo police officers: $n_{cp} = 126$
+- Standard deviation of blood concentration for Abbasia police officers: $s_{ap} = 5.8 \mu g/dl$
+- Standard deviation of blood concentration for Cairo police officers: $s_{cp} = 7.5 \mu g/dl$
+
+The difference in sample means is $Y_{cp} - Y_{ap} = 29.2 \mu g/dl - 18.2 \mu g/dl = 11.0 \mu g/dl$.
+
+```{r}
+n_cp <- 126
+n_ap <- 50
+Y_cp <- 29.2
+Y_ap <- 18.2
+mean_diff <- Y_cp - Y_ap
+s_cp <- 7.5
+s_ap <- 5.8
+
+s_p <- sqrt(((n_cp - 1)*s_cp^2 + (n_ap - 1)*s_ap^2)/(n_cp + n_ap - 2))
+SE <- s_p*sqrt(1/n_cp + 1/n_ap)
+```
+
+The pooled standard deviation for the two samples is given by
+$$
+\begin{align}
+s_p &= \sqrt{\frac{(n_{cp} - 1)s_{cp}^2 + (n_{ap} - 1)s_{ap}^2}{n_{cp} + n_{ap} - 2}}\\[0.25cm]
+ &= \sqrt{\frac{(126 - 1)7.5^2 + (50 - 1)5.8^2}{126 + 50 - 2}}\\[0.25cm]\\[0.25cm]
+ &= `r round(s_p, 4)`
+\end{align}
+$$
+The standard error of the sampling distribution is given by
+$$
+\begin{align}
+SE(Y_{cp} - Y_{ap}) &= s_p\sqrt{\frac{1}{n_{cp}} + \frac{1}{n_{ap}}}\\[0.25cm]
+&= `r round(s_p, 4)`\sqrt{\frac{1}{`r n_cp`} + \frac{1}{`r n_ap`}}\\[0.25cm]
+&= `r round(SE, 4)`
+\end{align}
+$$
+We have a total of $`r n_cp + n_ap`$ degrees of freedom, but since we're estimated the population standard deviations from data, we lose two of them, so our critical region will be defined by a *t*-distribution with $`r n_cp + n_ap - 2`$ degrees of freedom.
+
+```{r}
+t_97.5 <- qt(0.975, df=(n_cp + n_ap - 2))
+t <- mean_diff/SE
+```
+
+The test statistic is computed using
+$$
+t = \frac{Y_{cp} - Y_{ap}}{SE} = \frac{`r Y_cp` - `r Y_ap`}{`r round(SE, 4)`} = `r round(t, 4)`
+$$
+
+The 95% confidence interval for the mean difference is
+$$
+\begin{align}
+(\overline{Y}_{cp} - \overline{Y}_{ap}) &\pm t_{df}(1-\alpha/2)SE(\overline{Y}_{cp} - \overline{Y}_{ap})\\[0.25cm]
+11.0 &\pm `r round(t_97.5, 4)`(`r round(SE,4)`)
+\end{align}
+$$
+Note that a mean difference of zero is far from this confidence interval, so we expect a small *p*-value.
+
+```{r}
+p <- pt(t, df=(n_cp + n_ap - 2), lower.tail = FALSE)
+```
+
+$p = `r p`$. This *p*-value is **tiny**, so there is convincing evidence that the population means are different.
+
+### Problem 16
+
+
+### Problem 17
 
 ## Data Exercises
