@@ -2,6 +2,7 @@
 title: "Chapter 2" 
 author: "Tripp Bishop" 
 format: html
+editor: source
 ---
 ```{r setup}
 #| echo: false
@@ -422,7 +423,7 @@ $$
 The standard error of the sampling distribution is given by
 $$
 \begin{align}
-SE(Y_{cp} - Y_{ap}) &= s_p\sqrt{\frac{1}{n_{cp}} + \frac{1}{n_{ap}}}\\[0.25cm]
+SE(\bar{Y}_{cp} - \bar{Y}_{ap}) &= s_p\sqrt{\frac{1}{n_{cp}} + \frac{1}{n_{ap}}}\\[0.25cm]
 &= `r round(s_p, 4)`\sqrt{\frac{1}{`r n_cp`} + \frac{1}{`r n_ap`}}\\[0.25cm]
 &= `r round(SE, 4)`
 \end{align}
@@ -442,7 +443,7 @@ $$
 The 95% confidence interval for the mean difference is
 $$
 \begin{align}
-(\overline{Y}_{cp} - \overline{Y}_{ap}) &\pm t_{df}(1-\alpha/2)SE(\overline{Y}_{cp} - \overline{Y}_{ap})\\[0.25cm]
+(\bar{Y}_{cp} - \bar{Y}_{ap}) &\pm t_{df}(1-\alpha/2)SE(\bar{Y}_{cp} - \bar{Y}_{ap})\\[0.25cm]
 11.0 &\pm `r round(t_97.5, 4)`(`r round(SE,4)`)
 \end{align}
 $$
@@ -455,8 +456,219 @@ p <- pt(t, df=(n_cp + n_ap - 2), lower.tail = FALSE)
 $p = `r p`$. This *p*-value is **tiny**, so there is convincing evidence that the population means are different.
 
 ### Problem 16
+> **Motivation and Creativity**. Verify the statements made in the summary of 
+statistical findings for the Motivation and Creativity Data by analysing the 
+data on the computer.
 
+```{r problem 16}
+intrinsic <- c(12.0,12.0,12.9,13.6,16.6,17.2,17.5,18.2,19.1,19.3,19.8,20.3,
+               20.5,20.6,21.3,21.6,22.1,22.2,22.6,23.1,24.0,24.3,26.7,29.7)
+
+extrinsic <- c(5.0,5.4,6.1,10.9,11.8,12.0,12.3,14.8,15.0,16.8,17.2,17.2,17.4,
+               17.5,18.5,18.7,18.7,19.2,19.5,20.7,21.2,22.1,24.0)
+
+n_i <- length(intrinsic)
+n_e <- length(extrinsic)
+
+mean_i <- mean(intrinsic)
+mean_e <- mean(extrinsic)
+
+sd_i <- sd(intrinsic)
+sd_e <- sd(extrinsic)
+```
+
+Statistics
+
+$$
+\begin{align}
+n_i = `r n_i`\\[0.25cm]
+n_e = `r n_e`\\[0.25cm]
+\bar{X}_i = `r round(mean_i,2)`\\[0.25cm]
+\bar{X}_e = `r round(mean_e,2)`\\[0.25cm]
+s_i = `r round(sd_i,2)`\\[0.25cm]
+s_e = `r round(sd_e,2)`\\[0.25cm]
+\end{align}
+$$
+```{r}
+deg_f <- (n_i + n_e - 2)
+s_p <- sqrt(((n_i - 1)*sd_i^2 + (n_e - 1)*sd_e^2)/(n_i + n_e - 2))
+SE <- s_p*sqrt(1/n_i + 1/n_e)
+
+t <- (mean_i - mean_e)/SE
+t_97.5 <- qt(0.975, df=deg_f)
+
+# compute two-sided p-value
+p <- 2*pt(t, df=deg_f, lower.tail = FALSE)
+
+lower <- (mean_i - mean_e) - t_97.5*SE
+upper <- (mean_i - mean_e) + t_97.5*SE
+```
+
+Manually conducting the hypothesis test, we get the following results:
+
+- Degrees of freedom: $`r deg_f`
+- Pooled standard deviation: $`r round(s_p, 4)`$
+- Standard Error: $`r round(SE, 4)`$
+- Test statistic: $`r round(t,4)`$
+- Critical region: $[-`r round(t_97.5, 4)`, `r round(t_97.5, 4)`]$
+- 95% confidence interval: $[`r round(lower, 4)`, `r round(upper, 4)`]$
+- *p*-value: $`r round(p, 4)`$
+
+
+Hypothesis test using base R `t.test`:
+
+```{r}
+t.test(intrinsic, extrinsic, alternative = "two.sided", var.equal = TRUE)
+```
+
+Both the manual and `t.test` hypothesis tests produce results that closely match
+those of the study's findings reported in statistical summary.
 
 ### Problem 17
+>**Sex Discrimination**. Verify the statements made in the summary of statistical 
+findings for the Sex Discrimination Data by analysing the ata on the computer.
+
+```{r problem 17}
+males <- c(4620,5040,5100,5100,5220,5400,5400,5400,5400,5400,5700,6000,6000,
+           6000,6000,6000,6000,6000,6000,6000,6000,6000,6000,6000,6300,6600,
+           6600,6600,6840,6900,6900,8100)
+females <- c(3900,4020,4290,4380,4380,4380,4380,4380,4440,4500,4500,4620,4800,
+             4800,4800,4800,4800,4800,4800,4800,4800,4800,4980,5100,5100,5100,
+             5100,5100,5100,5160,5220,5220,5280,5280,5280,5400,5400,5400,5400,
+             5400,5400,5400,5400,5400,5400,5400,5400,5520,5520,5580,5640,5700,
+             5700,5700,5700,5700,6000,6000,6120,6300,6300)
+
+n_m <- length(males)
+n_f <- length(females)
+
+mean_m <- mean(males)
+mean_f <- mean(females)
+
+sd_m <- sd(males)
+sd_f <- sd(females)
+
+deg_f <- n_m + n_f - 2
+```
+
+Basic statistics:
+
+- Number of males: $`r n_m`$
+- Number of females: $`r n_f`$
+- Mean of males: $`r mean_m`$
+- Mean of females: $`r mean_f`$
+- Standard deviation of males: $`r sd_m`$
+- Standard deviation of females: $`r sd_f`$
+- Degrees of freedom: $`r deg_f`$
+
+```{r}
+s_p <- sqrt(((n_m - 1)*sd_m^2 + (n_f - 1)*sd_f^2)/deg_f)
+SE <- s_p*sqrt(1/n_m + 1/n_f)
+t <- (mean_m - mean_f)/SE
+t_97.5 <- qt(0.975, df=deg_f)
+lower <- (mean_m - mean_f) - t_97.5*SE
+upper <- (mean_m - mean_f) + t_97.5*SE
+p <- pt(t, df=deg_f, lower.tail = FALSE)
+```
+
+Manually conducting the hypothesis test, we get the following results:
+
+- Pooled standard deviation: $`r round(s_p, 4)`$
+- Standard Error: $`r round(SE, 4)`$
+- Test statistic: $`r round(t,4)`$
+- Critical region: $[-`r round(t_97.5, 4)`, `r round(t_97.5, 4)`]$
+- 95% confidence interval: $[`r round(lower, 4)`, `r round(upper, 4)`]$
+- *p*-value: $`r round(p, 4)`$
+
+Hypothesis test using base R `t.test`:
+```{r}
+t.test(males, females, alternative = "greater", var.equal = TRUE)
+```
+### Problem 18
+> **Bumpus's Data**. Verify the computations in Display 2.9 and Display 2.10 by 
+analysing Bumpus's data on the computer.
+
+
+```{r}
+stat_died <- df_sparrows |>
+  filter(survived == "Perished") |>
+  summarise(
+    n_p = n(),
+    mean_p = mean(humerus_length_in),
+    sd_p = sd(humerus_length_in)
+  )
+
+n_p <- stat_died |> pull(n_p)
+mean_p <- stat_died |> pull(mean_p)
+sd_p <- stat_died |> pull(sd_p)
+
+stats_lived <- df_sparrows |>
+  filter(survived == "Survived") |>
+  summarise(
+    n_l = n(),
+    mean_l = mean(humerus_length_in),
+    sd_l = sd(humerus_length_in)
+  )
+
+n_l <- stats_lived |> pull(n_l)
+mean_l <- stats_lived |> pull(mean_l)
+sd_l <- stats_lived |> pull(sd_l)
+
+deg_f <- n_p + n_l - 2
+```
+
+Basic statistics:
+
+- Number of perished: $`r n_p`$
+- Number of survived: $`r n_l`$
+- Mean of humerus length perished: $`r mean_p`$
+- Mean of humerus length survived: $`r mean_l`$
+- Standard deviation of humerus length perished: $`r sd_p`$
+- Standard deviation of humerus length survived: $`r sd_l`$
+- Degrees of freedom: $`r deg_f`$
+
+```{r}
+s_p <- sqrt(((n_p - 1)*sd_p^2 + (n_l - 1)*sd_l^2)/deg_f)
+SE <- s_p*sqrt(1/n_p + 1/n_l)
+t <- (mean_l - mean_p)/SE
+t_97.5 <- qt(0.975, df=deg_f)
+
+lower <- (mean_l - mean_p) - t_97.5*SE
+upper <- (mean_l - mean_p) + t_97.5*SE
+
+p <- 2*pt(t, df=deg_f)
+```
+
+Manually conducting the hypothesis test, we get the following results:
+
+- Pooled standard deviation: $`r round(s_p, 4)`$
+- Standard Error: $`r round(SE, 4)`$
+- Test statistic: $`r round(t,4)`$
+- Critical region: $[-`r round(t_97.5, 4)`, `r round(t_97.5, 4)`]$
+- 95% confidence interval: $[`r round(lower, 4)`, `r round(upper, 4)`]$
+- *p*-value (two-sided): $`r round(p, 4)`$
+
+Hypothesis test using base R `t.test`:
+
+```{r}
+dead <- df_sparrows |>
+  filter(survived == "Perished") |> 
+  select(humerus_length_in) |> 
+  pull()
+
+alive <- df_sparrows |>
+  filter(survived == "Survived") |> 
+  select(humerus_length_in) |> 
+  pull()
+t.test(alive, dead, alternative = "two.sided", var.equal = TRUE)
+```
+These results are similar to those reported in the statistical summary.
+
+### Problem 19
+
+
+### Problem 20
+
+
+
 
 ## Data Exercises
