@@ -664,10 +664,99 @@ t.test(alive, dead, alternative = "two.sided", var.equal = TRUE)
 These results are similar to those reported in the statistical summary.
 
 ### Problem 19
+**Fish Oil and Blood Pressure.** Reconsider the fish oil and blood pressure data. Since the measurements are the 
+reductions in blood pressure for each man, it is of interest to now whether the 
+mean reduction is zero for each group. For the regular oil diet group do the 
+following:
 
+(a) Compute the average and the sample standard deviation. What are the degrees of freedom associated with the sample standard deviation, $s_2$?
+(b) Compute the standard error for the average from this group: $SE(\bar{Y}_2) = s_2/\sqrt{n_2}$.
+(c) Construct a 95% confidence interval for $\mu_2$ as $\bar{Y}_2 + t_d(0.975)SE(\bar{Y}_2)$, where $d$ is the degrees of freedom associated with $s_2$.
+(d) For the hypothesis that $\mu_2=0$, construct the *t*-statistic $\bar{Y}_2/SE(\bar{Y}_2)$. Find the two-sided *p*-value as the proportion of values from a $t_d$ distribution farther from 0 than this value.
+
+#### Part A
+```{r}
+regular_oil <- c(-6,0,1,2,-3,-4,2)
+
+reg_bar <- mean(regular_oil)
+sd_r <- sd(regular_oil)
+```
+
+The mean of sample is $\bar{Y}_2 = `r round(reg_bar, 4)`$.
+The standard deviation of sample is $s_2 = `r round(sd_r, 4)`$.
+
+There are 6 degrees of freedom associated with the standard deviation $(7-1)$ 
+since one degree of freedom is "consumed" in calculating the mean.
+
+#### Part B
+```{r}
+n_r <- length(regular_oil)
+deg_f <- n_r - 1
+SE <- sd_r/sqrt(n_r)
+```
+
+The standard error is $SE(\bar{Y}_2) = `r round(SE,4)`$.
+
+#### Part C
+```{r}
+t_97.5 <- qt(0.975, df=deg_f)
+lower <- round(reg_bar - t_97.5*SE,4)
+upper <- round(reg_bar + t_97.5*SE,4)
+```
+
+The 95% confidence interval for $\mu_2$ is $[`r lower`, `r upper`]$.
+
+#### Part D
+
+```{r}
+t <- reg_bar/SE
+p <- 2*pt(t, df=deg_f)
+```
+
+The *t*-statistic for this hypothesis test is $t=`r round(t, 4)`.
+
+The two-sided *p*-value is $p=`r round(p,4)`$, which indicates that the
+hypothesis that $\mu_2=0$ is consistent with the data.
 
 ### Problem 20
+> **Fish Oil and Blood Pressure (One-Sample Analysis).** Repeat Exercise 19 for 
+the group of mean who were given the fish oil diet and then answer these 
+questions: Is there any evidence that the mean reduction for this group is 
+different from zero? What is the typical reduction in blood pressure expected 
+from this type of diet (for individuals like these men)? Provide a 95% 
+confidence interval.
 
+```{r}
+fish_oil <- c(8,12,10,14,2,0,0)
+
+fish_bar <- mean(fish_oil)
+sd_f <- sd(fish_oil)
+n_f <- length(fish_oil)
+deg_f <- n_f - 1
+
+SE <- sd_f/sqrt(n_f)
+t_97.5 <- qt(0.975, df=deg_f)
+
+lower <- round(fish_bar - t_97.5*SE,2)
+upper <- round(fish_bar + t_97.5*SE,2)
+
+t <- fish_bar/SE
+p <- round(2*pt(t, df=deg_f, lower.tail = FALSE), 2)
+```
+
+The typical reduction in blood pressure expected from this type of diet is 
+$\mu_f$. Our best estimate of $\mu_f$ from this data is 
+$\bar{Y}_f = `r round(fish_bar, 2)`$.
+
+The 95% confidence interval for $\mu_f$ is $[`r lower`, `r upper`]$. Notice that
+it does not contain zero. This suggests that the true population parameter is 
+not zero.
+
+The two-sided *p*-value for the hypothesis that $\mu_f = 0$ is $p=`r p`$. As a
+result, we reject the null hypothesis, at the $\alpha = 0.05$ level in favour of
+the alternative hypothesis that $\mu_f \neq 0$. With a more focused research
+question, but would be more appropriate to choose a one-sided test, such as
+$\mu_f > 0$, or that the population mean equals a specific non-zero value.
 
 
 
