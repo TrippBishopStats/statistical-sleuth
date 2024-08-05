@@ -758,6 +758,327 @@ the alternative hypothesis that $\mu_f \neq 0$. With a more focused research
 question, but would be more appropriate to choose a one-sided test, such as
 $\mu_f > 0$, or that the population mean equals a specific non-zero value.
 
-
-
 ## Data Exercises
+
+### Problem 21
+> **Bumpus's Data: Weights of Birds that Survived and Perished.** The data that
+Bumpus collected contains weight data, in grams, of 35 males house sparrows that
+that survived and the 24 that perished from the severe winter storm. Analyse the
+data using a graphical method; then use *t*-tools to say whether these 
+distributions differ and by how much. Write a short summary report, similar to
+the summaries in section 2.1.
+
+#### The data
+First, setup the individual vectors of data and then create a dataframe for
+analysis.
+```{r}
+survived <- rep(c(TRUE, FALSE), times=c(35,24))
+weights <- c(24.5,26.9,26.9,24.3,24.1,26.5,24.6,24.2,23.6,26.2,26.2,24.8,25.4,
+             23.7,25.7,25.7,26.3,26.7,23.9,24.7,28.0,27.9,25.9,25.7,26.6,23.2,
+             25.7,26.3,24.3,26.7,24.9,23.8,25.6,27.0,24.7,26.5,26.1,25.6,25.9,
+             25.5,27.6,25.8,24.9,26.0,26.5,26.0,27.1,25.1,26.0,25.6,25.0,24.6,
+             25.0,26.0,28.3,24.6,27.5,31.1,28.3)
+
+df_weights <- tibble(survived, weight=weights)
+```
+A density plot of the data doesn't reveal any obvious data entry errors.
+```{r}
+theme_set(theme_minimal())
+df_weights |> 
+  ggplot(aes(x=weights, fill = survived)) +
+  geom_density(alpha=0.4)
+```
+And now let's take a look at the bivariate distributions with a boxplot with the
+individual data points jitter over the top. This way it is clear how many data
+points are associated with each category of data.
+
+```{r}
+df_weights |> 
+  ggplot(aes(x=survived, y=weight)) +
+  geom_boxplot(outlier.alpha = 0) +
+  geom_jitter(alpha=0.2, width = 0.2) +
+  labs(
+    y="Weight (g)"
+  )
+```
+
+#### Compute summary statistics
+
+```{r}
+survived_mean_stats <- df_weights |> 
+  filter(survived==TRUE) |> 
+  summarise(
+    mean_weight = mean(weight),
+    sd_weight = sd(weight)
+  )
+
+perished_mean_stats <- df_weights |> 
+  filter(survived==FALSE) |> 
+  summarise(
+    mean_weight = mean(weight),
+    sd_weight = sd(weight)
+  )
+
+n_p <- 24
+n_s <- 35
+deg_f <- n_p + n_s - 2
+
+survived_mean_weight <- survived_mean_stats |> pull(mean_weight)
+survived_sd_weight <- survived_mean_stats |> pull(sd_weight)
+
+perished_mean_weight <- perished_mean_stats |> pull(mean_weight)
+perished_sd_weight <- perished_mean_stats |> pull(sd_weight)
+
+diff_means <- (perished_mean_weight - survived_mean_weight)
+```
+
+- Mean weight for survivors: $`r round(survived_mean_weight, 1)`$
+- Standard deviation of weights for survivors: $`r round(survived_sd_weight, 2)`$
+- Mean weight for perished: $`r round(perished_mean_weight, 1)`$
+- Standard deviation of weights for perished: $`r round(perished_sd_weight, 2)`$
+- Sample size of survivors: $`r n_s`$
+- Sample size of perished: $`r n_p`$
+- difference of sample means: $`r round(diff_means, 1) `$ 
+
+#### Perform a manual two-sample null hypothesis test
+
+```{r}
+sd_p <- sqrt(((n_s - 1)*survived_sd_weight^2 + (n_p - 1)*perished_sd_weight^2)/deg_f)
+SE <- sd_p*sqrt(1/n_p + 1/n_s)
+t_97.5 <- qt(0.975, df=deg_f)
+
+lower <- round(diff_means - t_97.5*SE,4)
+upper <- round(diff_means + t_97.5*SE,4)
+
+t <- diff_means/SE
+p <- 2*pt(t, df=deg_f, lower.tail = FALSE)
+```
+
+- Degrees of freedom: `r deg_f`
+- Pooled standard deviation: $`r round(sd_p,2)`$
+- Standard error: $`r SE`$
+- 95% confidence interval for difference of means: $[`r lower`, `r upper`]$
+- *t* statistic: $`r round(t, 4)`$
+- *p*-value (two-sided): $`r round(p, 4)`$
+
+#### Perform a *t*-test with base R
+
+```{r}
+df_weights |> 
+  mutate(
+    survived = factor(survived, labels = c("Perished", "Survived"))
+  ) |> 
+  t.test(weight ~ survived, data = _, alternative="two.sided", var.equal=TRUE)
+```
+
+#### Generate a linear model with a categorical predictor
+
+```{r}
+lm_weights <- lm(weight ~ survived, data=df_weights)
+summary(lm_weights)
+```
+#### Summary of Statistical Analysis
+There is strong evidence of a difference in mean weights with 
+$\mu_p - \mu_s = `r round(diff_means, 1)`g$ with a 95% confidence interval of 
+$`r lower`\text{ to }`r upper`$ grams. The two-sided *p*-value for the 
+hypothesis test is $p=`r round(p,4)`$.
+
+### Problem 22
+> **Cholesterol in Urban and Rural Guatemalans.** An observational study to 
+contrast cholesterol levels in rural and urban Guatemalan Indians came up with
+the data. The samples are not random samples. Assess the difference in 
+cholesterol distributions between the two populations. Write a summary 
+statistical report, including a graphical display to illustrate your 
+conclusions. What inferences are possible?
+
+```{r}
+location <- rep(c("urban", "rural"), times=c(45, 49))
+cholesterol <- c(133,134,155,170,175,179,181,184,188,189,190,196,197,199,200,200,
+                 201,201,204,205,205,205,206,214,217,222,222,227,227,228,234,
+                 234,236,239,241,242,244,249,252,273,279,284,284,284,330,
+                 # now the rural participants
+                 95,108,108,114,115,214,129,129,131,131,135,136,136,139,140,142,
+                 142,143,143,144,144,145,145,148,152,152,155,157,158,158,162,
+                 165,166,171,172,173,174,175,180,181,189,192,194,197,204,220,
+                 223,226,231)
+
+df_chol <- tibble(location, cholesterol) |> 
+  mutate(
+    location = factor(location, levels=c("urban", "rural"))
+  )
+
+df_chol |> 
+  ggplot(aes(x=location, y=cholesterol)) +
+  geom_boxplot(outlier.alpha = 0) +
+  geom_jitter(alpha=0.2, width = 0.15)
+```
+
+```{r}
+df_chol |> 
+  ggplot(aes(x=cholesterol, fill=location)) +
+  geom_density(alpha=0.4)
+```
+
+#### Descriptive statistics
+
+```{r}
+urban_stats <- df_chol |> 
+  filter(location == "urban") |> 
+  summarise(
+    mean_chol = mean(cholesterol),
+    sd_chol = sd(cholesterol),
+    sample_size = n()
+  )
+
+rural_stats <- df_chol |> 
+  filter(location == "rural") |> 
+  summarise(
+    mean_chol = mean(cholesterol),
+    sd_chol = sd(cholesterol),
+    sample_size = n()
+  )
+
+urban_mean <- urban_stats |> pull(mean_chol)
+urban_sd <- urban_stats |> pull(sd_chol)
+n_u <- urban_stats |> pull(sample_size)
+
+rural_mean <- rural_stats |> pull(mean_chol)
+rural_sd <- rural_stats |> pull(sd_chol)
+n_r <- rural_stats |> pull(sample_size)
+```
+
+- Mean of cholesterol for urban Guatemalans: $`r round(urban_mean, 1)`\%$.
+- Standard deviation of cholesterol for urban Guatemalans: $`r round(urban_sd, 3)`\%$.
+- Mean of cholesterol for rural Guatemalans: $`r round(rural_mean, 1)`\%$.
+- Standard deviation of cholesterol for rural Guatemalans: $`r round(rural_sd, 3)`\%$.
+- Sample size of urban Guatemalans: $`r n_u`$
+- Sample size of rural Guatemalans: $`r n_r`$
+
+#### Manual two-sample hypothesis test
+
+```{r}
+deg_f <- n_u + n_r - 2
+s_p <- sqrt(((n_u)*urban_sd^2 + (n_r)*rural_sd^2)/deg_f)
+SE <- s_p*sqrt(1/n_u + 1/n_r)
+t_97.5 <- qt(0.975, df=deg_f)
+diff_means <- urban_mean - rural_mean
+t <- diff_means/SE
+p <- 2*pt(diff_means, df=deg_f, lower.tail = FALSE)
+lower <- round(diff_means - t_97.5*SE, 2)
+upper <- round(diff_means + t_97.5*SE, 2)
+```
+
+- Degrees of freedom: `r deg_f`
+- Pooled standard deviation: $`r round(sd_p,2)`$
+- Standard error: $`r SE`$
+- 95% confidence interval for difference of means: $[`r lower`, `r upper`]$
+- *t* statistic: $`r round(t, 4)`$
+- *p*-value (two-sided): $`r round(p, 4)`$
+
+#### Hypotheis test with base R
+
+```{r}
+df_chol |> 
+  t.test(cholesterol ~ location, data = _, alternative="two.sided", var.equal=TRUE)
+```
+
+```{r}
+lm_chol <- lm(cholesterol ~ location, data = df_chol)
+summary(lm_chol)
+```
+
+#### Summary of Statistical Analysis
+There is strong evidence of a difference in mean cholesterol levels with 
+$\mu_u - \mu_r = `r round(diff_means, 1)`g$ with a 95% confidence interval of 
+$`r lower`\text{ to }`r upper`$ grams. The two-sided *p*-value for the 
+hypothesis test is $p=`r round(p,4)`$.
+
+### Problem 23
+> **Speed Limits and Traffic fatalities**. The National Highway Safety System Designation Act was signed in to law in the United States on November 28, 1995. Among other things, the act abolished the federal mandate of 55 mile per hour maximum speed limits on roads in the United States and permitted states to establish their own limits. Of the 50 states (plus the District of Columbia), 32 increased their speed limits either at the beginning of 1996 or sometime during 1996. What evidence is there that the percentage change in interstate highway traffic fatalities was greater in states that increased their speed limits? How much of a difference is there? Write a brief statistical report detailing the answers to these questions.
+
+```{r}
+retained <- c(-29.0,-4.4, -80.0,-25.0,-13.2,-3.4,-5.4,-14.3,10.8,-20.0,44.1,-9.7,
+              -50.0,-16.4,32.1,-41.2,-9.1,23.2,41.4)
+increased <- c(24.5,0.0,41.3,4.4,-19.1,30.0,8.2,32.1,-17.9,9.4,41.4,-13.3,-1.8,
+               33.3,-7.9,17.6,50.7,17.9,62.5,17.9,3.4,5.4,1.6,34.1,-7.0,18.2,
+               22.2,4.0,14.8,9.4,34.3,-31.5)
+
+speed_limit <- rep(c("Retained", "Increased"), times=c(19, 32))
+
+df_speed_limits <- tibble(speed_limit, pct_change=c(retained, increased))
+```
+
+#### Visualise the univariate data
+
+```{r}
+df_speed_limits |> 
+  ggplot(aes(x=pct_change)) +
+  geom_histogram(colour="white", bins=15) +
+  facet_wrap(~speed_limit)
+```
+
+#### Visualise the bivariate data
+
+```{r}
+df_speed_limits |> 
+  ggplot(aes(x=speed_limit, y=pct_change)) +
+  geom_boxplot(outlier.alpha = 0) +
+  geom_jitter(alpha=0.2, width=0.2)
+```
+
+#### Descriptive statistics
+
+```{r}
+n_r <- length(retained)
+n_i <- length(increased)
+mean_retained <- mean(retained)
+mean_increased <- mean(increased)
+sd_retained <- sd(retained)
+sd_increased <- sd(increased)
+```
+
+- Mean percent change in highway traffic fatalities for states who retained the 55 mph speed limit: $`r round(mean_retained, 1)`\%$.
+- Standard deviation of percent change in highway traffic fatalities for states who retained the 55 mph speed limit: $`r round(sd_retained, 3)`\%$.
+- Mean percent change in highway traffic fatalities for states who increased speed limit: $`r round(mean_increased, 1)`\%$.
+- Standard deviation of percent change in highway traffic fatalities for states who increased speed limit: $`r round(sd_increased, 3)`\%$.
+- Sample size of retaining states: $`r n_r`$
+- Sample size of increasing states: $`r n_i`$
+
+#### Manual hypothesis test $\mu_i > \mu_r$
+
+```{r}
+deg_f <- n_r + n_i - 2
+s_p <- sqrt(((n_r - 1)*sd_retained^2 + (n_i - 1)*sd_increased^2)/deg_f)
+SE <- s_p*sqrt(1/n_r + 1/n_i)
+t_97.5 <- qt(0.975, df=deg_f)
+diff_means <- mean_increased - mean_retained
+
+lower <- round(diff_means - t_97.5*SE,1)
+upper <- round(diff_means + t_97.5*SE,1)
+
+t <- diff_means/SE
+p <- pt(t, df=deg_f, lower.tail = FALSE)
+```
+
+- Degrees of freedom: `r deg_f`
+- Pooled standard deviation: $`r round(sd_p,2)`$
+- Standard error: $`r SE`$
+- 95% confidence interval for difference of means: $[`r lower`, `r upper`]$
+- *t* statistic: $`r round(t, 4)`$
+- *p*-value (one-sided): $`r round(p, 4)`$
+
+#### Hypothesis test of base R
+
+```{r}
+t.test(increased, retained, alternative = "greater", var.equal = TRUE)
+```
+
+The test using base R is in agreement with the manual *t* test.
+
+#### Summary of Statistical Analysis
+There is strong evidence of a difference in mean percent change with 
+$\mu_i - \mu_r = `r round(diff_means, 1)`\%$ having a 95% confidence interval of 
+$`r lower`\text{ to }`r upper`\%$ change. The one-sided *p*-value for the two-sample
+hypothesis test is $p=`r round(p,4)`$. Based on the available data, there is 
+strong evidence that raising speed limits is *correlated* with an increase in
+highway traffic fatalities.
